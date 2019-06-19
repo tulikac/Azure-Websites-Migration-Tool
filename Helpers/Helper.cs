@@ -15,6 +15,7 @@ using System.Configuration;
 using System.Management.Automation;
 using System.Management.Automation.Runspaces;
 using System.Text;
+using System.Web;
 
 namespace CompatCheckAndMigrate.Helpers
 {
@@ -50,8 +51,9 @@ namespace CompatCheckAndMigrate.Helpers
                 Dns.GetHostEntry(computername);
                 return true;
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
 
             return false;
@@ -139,7 +141,9 @@ namespace CompatCheckAndMigrate.Helpers
             }
             catch (Exception ex)
             {
-                MessageBox.Show(string.Format("Failed to download {0} from: {1} due to: {2}", filename, url, ex.ToString()));
+                string message = string.Format("Failed to download {0} from: {1} due to: {2}", filename, url, ex.ToString());
+                MessageBox.Show(message);
+                TraceHelper.Tracer.WriteTrace(message);
             }
 
             return path;
@@ -158,6 +162,7 @@ namespace CompatCheckAndMigrate.Helpers
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
 
             return false;
@@ -204,6 +209,7 @@ namespace CompatCheckAndMigrate.Helpers
             catch (Exception ex)
             {
                 exceptionMessage = ex.Message;
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
 
             return false;
@@ -366,7 +372,7 @@ namespace CompatCheckAndMigrate.Helpers
 
         public static string PostMigratePortal
         {
-            get { return ConfigurationManager.AppSettings["PostMigratePortal"] ?? "https://www.movemetothecloud.net"; }
+            get { return ConfigurationManager.AppSettings["PostMigratePortal"] ?? "https://migrate4.azurewebsites.net"; }
         }
 
         public static string ScmSitePrimary
@@ -406,12 +412,12 @@ namespace CompatCheckAndMigrate.Helpers
 
         public static string SiteStatusApi
         {
-            get { return ConfigurationManager.AppSettings["SiteStatusApi"] ?? "/api/sitemigration/{0}/sitename/{1}"; }
+            get { return ConfigurationManager.AppSettings["SiteStatusApi"] ?? "/api/sitemigration/{0}/sitename/{1}/"; }
         }
 
         public static string DbStatusApi
         {
-            get { return ConfigurationManager.AppSettings["DbStatusApi"] ?? "/api/dbmigration/{0}/sitename/{1}"; }
+            get { return ConfigurationManager.AppSettings["DbStatusApi"] ?? "/api/dbmigration/{0}/sitename/{1}/"; }
         }
 
         public static string Results
@@ -445,41 +451,55 @@ namespace CompatCheckAndMigrate.Helpers
             get { return ConfigurationManager.AppSettings["DeploymentBaseOptionsType"] ?? "Microsoft.Web.Deployment.DeploymentBaseOptions"; }
         }
 
-        public static string UpdateStatus(string sitename, bool dbStatus = false)
+        public static string UpdateStatus(string sitename, string servername, bool dbStatus = false)
         {
-            string url = string.Format(dbStatus ? DbStatusApi : SiteStatusApi, AzureMigrationId, sitename);
-            string baseAddress = UrlCombine(
-                PostMigratePortal,
-                url);
-            try
+            // colons are not allowed in URLs
+            string siteNameWithServer = Uri.EscapeDataString(servername) + ":" + Uri.EscapeDataString(sitename);
+            siteNameWithServer = siteNameWithServer.Replace(":", "_x-colon_");
+            string url = string.Format(dbStatus ? DbStatusApi : SiteStatusApi, AzureMigrationId, siteNameWithServer);
+            string baseAddress = UrlCombine(PostMigratePortal, url);
+            int numRetries = 0;
+            string exceptionMsg = string.Empty;
+            while (numRetries < 3)
             {
-
-                var req = (HttpWebRequest)HttpWebRequest.Create(baseAddress);
-                req.Method = "PUT";
-                req.ContentType = "application/json";
-                req.ContentLength = 0;
-
-                var response = (HttpWebResponse)req.GetResponse();
-                if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.NoContent)
+                try
                 {
-                    var message = new StringBuilder();
-                    message.AppendFormat("Client: Receive Response HTTP/{0} {1} {2}\r\n", response.ProtocolVersion, (int)response.StatusCode, response.StatusDescription);
-                    if (response.ContentLength > 0)
+                    var req = (HttpWebRequest)HttpWebRequest.Create(baseAddress);
+                    req.Method = "PUT";
+                    req.ContentType = "application/json";
+                    req.ContentLength = 0;
+
+                    var response = (HttpWebResponse)req.GetResponse();
+                    if (response.StatusCode != HttpStatusCode.OK && response.StatusCode != HttpStatusCode.NoContent)
                     {
-                        using (var r = new StreamReader(response.GetResponseStream()))
+                        var message = new StringBuilder();
+                        message.AppendFormat("Client: Receive Response HTTP/{0} {1} {2}\r\n", response.ProtocolVersion, (int)response.StatusCode, response.StatusDescription);
+                        if (response.ContentLength > 0)
                         {
-                            message.AppendLine(r.ReadToEnd());
+                            using (var r = new StreamReader(response.GetResponseStream()))
+                            {
+                                message.AppendLine(r.ReadToEnd());
+                            }
                         }
+
+                        return message.ToString();
                     }
-                    return message.ToString();
+
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        return string.Empty;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                return ex.ToString();
+                catch (Exception ex)
+                {
+                    exceptionMsg = ex.ToString();
+                    TraceHelper.Tracer.WriteTrace(ex.ToString());
+                }
+
+                numRetries++;
             }
 
-            return string.Empty;
+            return exceptionMsg;
         }
 
         public static bool IsWebDeployInstalled
@@ -534,6 +554,7 @@ namespace CompatCheckAndMigrate.Helpers
             {
                 MessageBox.Show(ex.ToString());
                 helper.LogInformation(ex.ToString());
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
 
             return helper;
@@ -582,7 +603,7 @@ namespace CompatCheckAndMigrate.Helpers
                     }
                     catch (Exception ex)
                     {
-                        // MessageBox.Show(ex.ToString());
+                        TraceHelper.Tracer.WriteTrace(ex.ToString());
                     }
                 }
 

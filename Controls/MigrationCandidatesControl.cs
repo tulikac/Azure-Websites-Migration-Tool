@@ -244,10 +244,11 @@ namespace CompatCheckAndMigrate.Controls
 
                     //
                     // Set the root checked after all of the nodes have been
-                    // added. This will fire the checked event recursively
+                    // added, and then fire the checked event recursively
                     // for all of the elements in the tree just once.
                     //
                     rootNode.Checked = true;
+                    this.SyncCheckedStatus(rootNode, true);
 
                     // Show listbox with results.
                     this.descriptionLabel.Visible = this.StartButton.Visible = this.btnBack.Visible = true; // this.websitesCheckedListBox.Visible = 
@@ -278,23 +279,55 @@ namespace CompatCheckAndMigrate.Controls
         }
 
         private void siteTree_AfterCheck(object sender, TreeViewEventArgs e) {
+            // The code only executes if the user caused the checked state to change. 
+            if (e.Action == TreeViewAction.Unknown)
+            {
+                return;
+            }
+
             TreeNode selectedNode = e.Node;
             bool nodeChecked = selectedNode.Checked;
             
             //
             // If this node has children, then sync their checked status.
             //
-            if ((null != selectedNode.Nodes) && (selectedNode.Nodes.Count != 0)) {
-                foreach (TreeNode child in selectedNode.Nodes) {
-                    if (child.Checked != selectedNode.Checked && ((null == child.Tag) || ("AddDB" != child.Tag)))
+            this.SyncCheckedStatus(selectedNode, nodeChecked);
+            //
+            // If this is a child node, and it's been checked, make sure its
+            // parent nodes are checked.
+            //
+            TreeNode nodeParent = selectedNode.Parent;
+            while (null != nodeParent)
+            {
+                if (!nodeParent.Checked)
+                {
+                    nodeParent.Checked = true;
+                }
+                nodeParent = nodeParent.Parent;
+            }
+        }
+
+        private void SyncCheckedStatus(TreeNode selectedNode, bool nodeChecked)
+        {
+            this.SyncSelectedObjects(selectedNode, nodeChecked);
+            if (selectedNode.Nodes.Count != 0)
+            {
+                foreach (TreeNode child in selectedNode.Nodes)
+                {
+                    if (child.Tag.ToString() != "AddDB")
                     {
-                        child.Checked = selectedNode.Checked;
+                        child.Checked = nodeChecked;
+                        this.SyncCheckedStatus(child, nodeChecked);
                     }
                 }
             }
+        }
 
-            if ( (selectedNode == this.siteTree.TopNode) || 
-                 ( null == this.siteTree.Tag) ){
+        private void SyncSelectedObjects(TreeNode selectedNode, bool nodeChecked)
+        {
+            if ((selectedNode == this.siteTree.TopNode) ||
+                 (null == this.siteTree.Tag))
+            {
                 return;
             }
 
@@ -304,7 +337,6 @@ namespace CompatCheckAndMigrate.Controls
             //
             // Add or remove selected items from the selected objects list.
             //
-
             if (nodeChecked) {
                 if(typeof(string) == objectType && selectedNode.Tag == "AddDB")
                 {
@@ -333,9 +365,11 @@ namespace CompatCheckAndMigrate.Controls
                         }
                         catch (System.ArgumentException ex)
                         {
-                            MessageBox.Show("Invalid connection string.\r\n\r\nValid connection string should be like\r\n 'Data Source=<servername>; Initial Catalog=<intialCatalog>; Trusted_Connection=<Yes|No>'" );
+                            string message = "Invalid connection string.\r\n\r\nValid connection string should be like\r\n 'Data Source=<servername>; Initial Catalog=<intialCatalog>; Trusted_Connection=<Yes|No>'";
+                            MessageBox.Show(message);
                             selectedNode.Tag = "AddDB";
                             selectedNode.Checked = false;
+                            TraceHelper.Tracer.WriteTrace(message);
                             return;
                         }
                     }
@@ -359,6 +393,7 @@ namespace CompatCheckAndMigrate.Controls
                     nodeParent = nodeParent.Parent;
                 }
 
+
                 if (typeof(Site) == objectType) {
                     if (!selectedObjs.SelectedSites.Contains((Site)selectedNode.Tag)) {
                         selectedObjs.SelectedSites.Add((Site)selectedNode.Tag);
@@ -367,36 +402,46 @@ namespace CompatCheckAndMigrate.Controls
                     // in the tree without at least one site being checked.
                     this.StartButton.Enabled = true;
                 }
-                else if (typeof(Database) == objectType) {
-                    if (!selectedObjs.SelectedDatabases.Contains((Database)selectedNode.Tag)) {
+                else if (typeof(Database) == objectType)
+                {
+                    if (!selectedObjs.SelectedDatabases.Contains((Database)selectedNode.Tag))
+                    {
                         selectedObjs.SelectedDatabases.Add((Database)selectedNode.Tag);
                     }
                 }
-                else if (typeof(IISServer) == objectType) {
-                    if (!selectedObjs.SelectedServers.Contains((IISServer)selectedNode.Tag)) {
+                else if (typeof(IISServer) == objectType)
+                {
+                    if (!selectedObjs.SelectedServers.Contains((IISServer)selectedNode.Tag))
+                    {
                         selectedObjs.SelectedServers.Add((IISServer)selectedNode.Tag);
                     }
                 }
             }
-            else {
-                if (typeof(Site) == objectType) {
-                    if (selectedObjs.SelectedSites.Contains((Site)selectedNode.Tag)) {
+            else
+            {
+                if (typeof(Site) == objectType)
+                {
+                    if (selectedObjs.SelectedSites.Contains((Site)selectedNode.Tag))
+                    {
                         selectedObjs.SelectedSites.Remove((Site)selectedNode.Tag);
                     }
                 }
-                else if (typeof(Database) == objectType) {
-                    if (selectedObjs.SelectedDatabases.Contains((Database)selectedNode.Tag)) {
+                else if (typeof(Database) == objectType)
+                {
+                    if (selectedObjs.SelectedDatabases.Contains((Database)selectedNode.Tag))
+                    {
                         selectedObjs.SelectedDatabases.Remove((Database)selectedNode.Tag);
                     }
                 }
-                else if (typeof(IISServer) == objectType) {
-                    if (!selectedObjs.SelectedServers.Contains((IISServer)selectedNode.Tag)) {
+                else if (typeof(IISServer) == objectType)
+                {
+                    if (!selectedObjs.SelectedServers.Contains((IISServer)selectedNode.Tag))
+                    {
                         selectedObjs.SelectedServers.Remove((IISServer)selectedNode.Tag);
                     }
                 }
                 this.StartButton.Enabled = (0 != selectedObjs.SelectedSites.Count());
             }
-            return;
         }
     }
 }

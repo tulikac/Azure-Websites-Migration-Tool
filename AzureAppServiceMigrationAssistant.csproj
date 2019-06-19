@@ -7,7 +7,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CompatCheckAndMigrate</RootNamespace>
     <AssemblyName>CompatCheckAndMigrate</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
     <SccProjectName>SAK</SccProjectName>
@@ -15,7 +15,7 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
     <IsWebBootstrapper>true</IsWebBootstrapper>
-    <PublishUrl>ftp://172.30.173.21/</PublishUrl>
+    <PublishUrl>C:\temp\AzureMigrate\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Web</InstallFrom>
     <UpdateEnabled>true</UpdateEnabled>
@@ -25,14 +25,14 @@
     <UpdatePeriodically>false</UpdatePeriodically>
     <UpdateRequired>false</UpdateRequired>
     <MapFileExtensions>true</MapFileExtensions>
-    <InstallUrl>http://www.azuremigration.com/</InstallUrl>
-    <SupportUrl>http://www.azuremigration.com</SupportUrl>
-    <ProductName>Azure Websites Migration Assistant</ProductName>
+    <InstallUrl>https://www.movemetothecloud.net/</InstallUrl>
+    <SupportUrl>https://www.movemetothecloud.net/</SupportUrl>
+    <ProductName>Azure App Service Migration Assistant</ProductName>
     <PublisherName>Microsoft</PublisherName>
     <CreateWebPageOnPublish>true</CreateWebPageOnPublish>
     <WebPage>clickonce.htm</WebPage>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.5.0.%2a</ApplicationVersion>
+    <ApplicationVersion>1.9.6.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <PublishWizardCompleted>true</PublishWizardCompleted>
     <BootstrapperEnabled>true</BootstrapperEnabled>
@@ -46,6 +46,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -55,13 +56,15 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <GenerateSerializationAssemblies>Auto</GenerateSerializationAssemblies>
   </PropertyGroup>
   <PropertyGroup />
   <PropertyGroup>
-    <ManifestCertificateThumbprint>66F37E5E7A4849038BD69132CB37CBB8CCEE8B85</ManifestCertificateThumbprint>
+    <ManifestCertificateThumbprint>42deb04f4d8a154fd0621cb2808e2930821fa0c9</ManifestCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup>
-    <ManifestKeyFile>AzureWebsitesMigrationAssistant_TemporaryKey.pfx</ManifestKeyFile>
+    <ManifestKeyFile>AzureAppServiceMigrationAssistant_1_TemporaryKey.pfx</ManifestKeyFile>
   </PropertyGroup>
   <PropertyGroup>
     <GenerateManifests>true</GenerateManifests>
@@ -210,6 +213,7 @@
     <Compile Include="Controls\SiteStatusControl.Designer.cs">
       <DependentUpon>SiteStatusControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Helpers\TraceHelper.cs" />
     <Compile Include="Helpers\Application.cs" />
     <Compile Include="Helpers\ApplicationPool.cs" />
     <Compile Include="Helpers\IISServers.cs" />
@@ -311,7 +315,7 @@
     <None Include="App.config">
       <SubType>Designer</SubType>
     </None>
-    <None Include="AzureWebsitesMigrationAssistant_TemporaryKey.pfx">
+    <None Include="AzureAppServiceMigrationAssistant_1_TemporaryKey.pfx">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Include="oldclickonce.cmd" />
@@ -331,6 +335,11 @@
     <None Include="Resources\Search.gif" />
   </ItemGroup>
   <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.6.1">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.6.1 %28x86 and x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
     <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1 Client Profile</ProductName>
@@ -339,7 +348,7 @@
     <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
       <Visible>False</Visible>
       <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
+      <Install>false</Install>
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
@@ -356,6 +365,38 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="workitems.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <PublishFile Include="Microsoft.Web.PlatformInstaller">
+      <Visible>False</Visible>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="Microsoft.Web.PlatformInstaller.WebDeployShim">
+      <Visible>False</Visible>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <PublishState>Include</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <FileType>Assembly</FileType>
+    </PublishFile>
+    <PublishFile Include="workitems.txt">
+      <Visible>False</Visible>
+      <Group>
+      </Group>
+      <TargetPath>
+      </TargetPath>
+      <PublishState>Exclude</PublishState>
+      <IncludeHash>True</IncludeHash>
+      <FileType>File</FileType>
+    </PublishFile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

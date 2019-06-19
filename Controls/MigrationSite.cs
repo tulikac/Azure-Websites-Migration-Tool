@@ -175,6 +175,7 @@ namespace CompatCheckAndMigrate.Controls
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
         }
 
@@ -192,6 +193,7 @@ namespace CompatCheckAndMigrate.Controls
             catch (Exception ex)
             {
                 MessageBox.Show(ex.ToString());
+                TraceHelper.Tracer.WriteTrace(ex.ToString());
             }
 
             var wizardStep = Helper.IsWebDeployInstalled
@@ -243,6 +245,7 @@ namespace CompatCheckAndMigrate.Controls
                 catch (Exception ex)
                 {
                     MessageBox.Show(ex.ToString());
+                    TraceHelper.Tracer.WriteTrace(ex.ToString());
                 }
             }
 
@@ -250,6 +253,9 @@ namespace CompatCheckAndMigrate.Controls
         }
         private void BackButton_Click(object sender, EventArgs e)
         {
+            this.publishSettings = null;
+            checkPublishSettingsTimer.Enabled = true;
+            btnPublish.Visible = false;
             if (this.siteBrowser.CanGoBack)
             {
                 this.siteBrowser.GoBack();
